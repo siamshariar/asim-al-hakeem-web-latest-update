@@ -93,19 +93,23 @@ export default function Articles({ playlists, headerLectures, qnaCategories, ini
 
   // Handle search with debounce
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    // If search is empty, restore initial page (don't treat as a search)
+    if (!deferredSearchTerm || deferredSearchTerm.trim() === '') {
+      // cancel pending search
+      setIsSearching(false);
+      setLoadedPages(initialArticlesPage?.articleItems?.length ? [initialArticlesPage.articleItems] : []);
+      setCurrentPage(initialArticlesPage?.currentPage || 1);
+      setTotalPages(initialArticlesPage?.numberOfPages || 1);
+      return;
     }
 
     searchTimeoutRef.current = setTimeout(() => {
       performSearch(deferredSearchTerm);
     }, 300);
 
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, [deferredSearchTerm, performSearch]);
 
   // Load more articles with 1 second delay
@@ -209,7 +213,6 @@ export default function Articles({ playlists, headerLectures, qnaCategories, ini
       <section className="py-6 bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="container max-w-[1260px] mx-auto px-4">
           <div className="relative max-w-md">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search articles..."
@@ -226,10 +229,11 @@ export default function Articles({ playlists, headerLectures, qnaCategories, ini
               </button>
             )}
           </div>
-          <div className="mt-2 text-xs sm:text-sm text-gray-500">
-            {displayedArticles.length} articles loaded
-            {searchTerm && ` matching "${searchTerm}"`}
-          </div>
+          {searchTerm ? (
+            <div className="mt-2 text-xs sm:text-sm text-gray-500">
+              {displayedArticles.length} articles matching "{searchTerm}"
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -307,15 +311,6 @@ export default function Articles({ playlists, headerLectures, qnaCategories, ini
                     </svg>
                     <span className="text-sm sm:text-base text-gray-500 font-medium">Loading more articles...</span>
                   </motion.div>
-                )}
-                {!hasMoreToLoad && displayedArticles.length > 0 && (
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-xs sm:text-sm text-gray-400"
-                  >
-                    ✓ All articles loaded ({displayedArticles.length} total)
-                  </motion.p>
                 )}
               </div>
             </>
